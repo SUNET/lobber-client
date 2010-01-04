@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>net.nordu.lobber</groupId>
+		<artifactId>lobber-client</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>lobber-client-jnlp</artifactId>
+	<name>Lobber Client JNLP</name>
+	<packaging>pom</packaging>
+        <organization>
+           <name>NORDUNet</name>
+        </organization>
+        <description>Lobber Client JNLP</description>
+	<build>
+		<defaultGoal>install</defaultGoal>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>webstart-maven-plugin</artifactId>
+				<extensions>true</extensions>
+				<executions>
+					<execution>
+						<goals>
+							<goal>jnlp</goal> <!-- use jnlp, jnlp-inline or jnlp-single as appropriate -->
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<jnlp>
+						<mainClass>net.nordu.lobber.client.applet.LobberClientApplet</mainClass>
+					</jnlp>
+					<sign>
+						<keystore>${pom.basedir}/devel.jks</keystore>
+						<keypass>kaka4711</keypass>
+						<storepass>kaka4711</storepass>
+						<alias>code</alias>
+					</sign>
+					<verbose>true</verbose>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>${pom.groupId}</groupId>
+			<artifactId>lobber-client-core</artifactId>
+			<version>${pom.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+	</dependencies>
+</project>

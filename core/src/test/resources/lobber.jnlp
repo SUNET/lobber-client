@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" codebase="../../../target" href="">
+    <information>
+        <title>Lobber Client</title>
+        <vendor>NORDUnet</vendor>
+    </information>
+    <resources>
+        <!-- Application Resources -->
+        <j2se version="1.6"
+              href="http://java.sun.com/products/autodl/j2se" />
+        <jar href="lobber-client-core-1.0-SNAPSHOT-jar-with-dependencies.jar" main="true" />
+
+    </resources>
+    <applet-desc 
+         name="Lobber Client Applet"
+         main-class="net.nordu.lobber.client.applet"
+         width="300"
+         height="300">
+     </applet-desc>
+</jnlp>
