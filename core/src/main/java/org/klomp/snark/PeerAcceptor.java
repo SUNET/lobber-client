@@ -34,20 +34,26 @@ import java.net.Socket;
 public class PeerAcceptor
 {
     private final PeerCoordinator coordinator;
+    private final MessageListener mlistener;
 
-    public PeerAcceptor (PeerCoordinator coordinator)
+    public PeerAcceptor (PeerCoordinator coordinator, MessageListener mlistener)
     {
         this.coordinator = coordinator;
+        this.mlistener = mlistener;
     }
 
     public void connection (Socket socket, BufferedInputStream bis,
         BufferedOutputStream bos) throws IOException
     {
+    	System.err.println("connection from "+socket.getInetAddress());
+    	System.err.println("need peers? "+coordinator.needPeers());
         if (coordinator.needPeers()) {
             Peer peer = new Peer(socket, bis, bos, coordinator.getID(),
                 coordinator.getMetaInfo());
+            System.err.println("Adding peer "+peer);
             coordinator.addPeer(peer);
         } else {
+        	System.err.println("Closing unwanted connection from "+socket.getInetAddress());
             socket.close();
         }
     }

@@ -89,6 +89,7 @@ public class ConnectionAcceptor implements Runnable
         while (!stop) {
             try {
                 final Socket socket = serverSocket.accept();
+                System.err.println("connection from "+socket.getInetAddress());
                 Thread t = new Thread("Connection-" + socket) {
                     @Override
                     public void run ()
@@ -120,8 +121,11 @@ public class ConnectionAcceptor implements Runnable
                                     httpacceptor.connection(socket, bis, bos);
                                 }
                             } else {
+                            	System.err.println("handing off to "+peeracceptor);
                                 peeracceptor.connection(socket, bis, bos);
                             }
+                            
+                            System.err.println("connection done...");
                         } catch (IOException ioe) {
                             try {
                                 socket.close();

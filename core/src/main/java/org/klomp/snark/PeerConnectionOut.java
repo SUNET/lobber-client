@@ -116,7 +116,7 @@ class PeerConnectionOut implements Runnable
 
                     // XXX - Should also register overhead...
                     if (m.type == Message.PIECE) {
-                        state.uploaded(m.len);
+                        state.uploaded(m.data.length,m.piece);
                     }
 
                     m = null;

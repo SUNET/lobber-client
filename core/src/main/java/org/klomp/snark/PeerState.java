@@ -205,7 +205,7 @@ class PeerState
      * Called when some bytes have left the outgoing connection. XXX - Should
      * indicate whether it was a real piece or overhead.
      */
-    void uploaded (int size)
+    void uploaded (int size, int piece) // XXX I thought I might use the piece# at one point ... leifj
     {
         uploaded += size;
         listener.uploaded(peer, size);

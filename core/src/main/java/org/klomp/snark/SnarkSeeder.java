@@ -20,22 +20,14 @@
 package org.klomp.snark;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.UnknownHostException;
 import java.util.Random;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.klomp.snark.bencode.BDecoder;
 
 /**
  * Main Snark object used to fetch or serve a given file.
@@ -52,8 +44,8 @@ public class SnarkSeeder
 
     private String announce;
     
-    /** The path to the file being torrented */
-    public String path;
+    /** The file being torrented */
+    public File path;
 
     /** The metadata known about the torrent */
     public MetaInfo meta;
@@ -70,6 +62,8 @@ public class SnarkSeeder
     /** Obtains information on new peers. */
     public TrackerClient trackerclient;
 
+    private MessageListener mlistener;
+    
     /**
      * Constructs a Snark client.
      * @param path The address of the torrent to download or file to serve
@@ -79,8 +73,8 @@ public class SnarkSeeder
      * @param slistener A custom {@link StorageListener} to use
      * @param clistener A custom {@link CoordinatorListener} to use
      */
-    public SnarkSeeder (String path, String ip, int user_port, String announce,
-        StorageListener slistener, CoordinatorListener clistener)
+    public SnarkSeeder (File path, String[] ip, int user_port, String announce,
+        StorageListener slistener, CoordinatorListener clistener, MessageListener mlistener)
     {
         this.slistener = slistener;
         this.clistener = clistener;
@@ -88,7 +82,8 @@ public class SnarkSeeder
         this.user_port = user_port;
         this.ip = ip;
         this.announce = announce;
-
+        this.mlistener = mlistener;
+        
         // Create a new ID and fill it with something random. First nine
         // zeros bytes, then three bytes filled with snark and then
         // sixteen random bytes.
@@ -143,7 +138,9 @@ public class SnarkSeeder
         throws IOException
     {
         activity = NETWORK_SETUP;
-
+        if (mlistener != null)
+        	mlistener.message("Network setup..");
+        
         IOException lastException = null;
         if (user_port != -1) {
             port = user_port;
@@ -171,20 +168,50 @@ public class SnarkSeeder
             }
 
             if (ip != null || user_port != -1) {
+            	if (mlistener != null)
+                	mlistener.message(message);
                 abort(message, lastException);
             } else {
+            	if (mlistener != null)
+                	mlistener.message("warning: "+message);
                 log.log(Level.WARNING, message);
             }
             port = -1;
         } else {
-            port = serversocket.getLocalPort();
             log.log(Level.FINE, "Listening on port: " + port);
         }
+        
+        if (mlistener != null)
+        	mlistener.message("Listening on port "+port);
 
         activity = CREATING_TORRENT;
-        storage = new Storage(new File(path), announce, slistener);
+        storage = new Storage(path, announce, slistener);
+        if (mlistener != null)
+        	mlistener.message("Creating storage...");
         storage.create();
+        if (mlistener != null)
+        	mlistener.message("Extracting torrent...");
         meta = storage.getMetaInfo();
+        if (mlistener != null)
+        	mlistener.message("Saving torrent...");
+        
+        try {
+        	File tmpFile = File.createTempFile("lobber", ".torrent");
+	        FileOutputStream fout = new FileOutputStream(tmpFile);
+	        fout.write(meta.getTorrentData());
+	        if (mlistener != null) {
+	        	mlistener.message(meta.getName());
+	        	mlistener.message(meta.getInfoHash());
+	        }
+	        fout.flush();
+	        fout.close();
+        } catch (Throwable ex) {
+        	if (mlistener != null)
+        		mlistener.exception(ex);
+        }
+        
+        if (mlistener != null)
+        	mlistener.message("Network setup done");
     }
 
     /**
@@ -197,11 +224,11 @@ public class SnarkSeeder
         activity = COLLECTING_PIECES;
         coordinator = new PeerCoordinator(id, meta, storage, clistener);
 
-        PeerAcceptor peeracceptor = new PeerAcceptor(coordinator);
+        PeerAcceptor peeracceptor = new PeerAcceptor(coordinator, mlistener);
         acceptor = new ConnectionAcceptor(serversocket, null, peeracceptor);
         acceptor.start();
 
-        trackerclient = new TrackerClient(meta, coordinator, port);
+        trackerclient = new TrackerClient(meta, coordinator, mlistener, port);
         trackerclient.start();
         coordinator.setTracker(trackerclient);
     }
@@ -231,8 +258,8 @@ public class SnarkSeeder
     /** The port number Snark listens on */
     protected int port;
 
-    /** The IP address to listen on, if applicable */
-    protected String ip;
+    /** My local addresses */
+    protected String[] ip;
 
     /** The {@link StorageListener} to send updates to */
     protected StorageListener slistener;

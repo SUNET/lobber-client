@@ -23,7 +23,7 @@ package org.klomp.snark;
 /**
  * Callback used when Storage changes.
  */
-public interface StorageListener
+public interface StorageListener extends MessageListener
 {
     /**
      * Called when the storage creates a new file of a given length.
@@ -48,4 +48,7 @@ public interface StorageListener
      * known.
      */
     void storageAllChecked (Storage storage);
+    
+    void storateGetPiece(Storage storage, int num);
+    
 }

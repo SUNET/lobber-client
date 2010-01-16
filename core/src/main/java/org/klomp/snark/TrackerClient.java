@@ -29,6 +29,8 @@ import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.nordu.lobber.client.applet.ExceptionUtils;
+
 /**
  * Informs metainfo tracker of events and gets new peers for peer coordinator.
  * 
@@ -50,6 +52,8 @@ public class TrackerClient extends Thread
 
     private final PeerCoordinator coordinator;
 
+    private final MessageListener mlistener;
+    
     private final int port;
 
     private boolean stop;
@@ -58,16 +62,17 @@ public class TrackerClient extends Thread
 
     private long lastRequestTime;
 
-    public TrackerClient (MetaInfo meta, PeerCoordinator coordinator, int port)
+    public TrackerClient (MetaInfo meta, PeerCoordinator coordinator, MessageListener mlistener, int port)
     {
         // Set unique name.
         super("TrackerClient-" + urlencode(coordinator.getID()));
         this.meta = meta;
         this.coordinator = coordinator;
+        this.mlistener = mlistener;
 
         // XXX - No way to actaully give the tracker feedback that we
         // don't run a peer acceptor on any port so use discard 9/tcp sink null
-        this.port = (port == -1) ? 9 : port;
+        this.port = port; //(port == -1) ? 9 : port;
 
         stop = false;
     }
@@ -108,7 +113,12 @@ public class TrackerClient extends Thread
                         coordinator.addPeer((Peer)it.next());
                     }
                     started = true;
-                } catch (IOException ioe) {
+                } catch (Throwable ioe) {
+                	if (mlistener != null) {
+                		mlistener.message("Could not contact tracker at '"+ announce+": "+ExceptionUtils.stackTrace(ioe));
+                		//mlistener.exception(ioe);
+                	}
+                	
                     // Probably not fatal (if it doesn't last to long...)
                     log.log(Level.WARNING, "Could not contact tracker at '"
                         + announce, ioe);
@@ -117,6 +127,8 @@ public class TrackerClient extends Thread
                 if (!started) {
                     failures++;
                     log.log(Level.FINER, "     Retrying in 5s...");
+                    if (mlistener != null)
+                    	mlistener.message("Retrying in 5s...");
                     try {
                         // Sleep five seconds...
                         Thread.sleep(5 * 1000);
@@ -198,7 +210,9 @@ public class TrackerClient extends Thread
             + ((event != NO_EVENT) ? ("&event=" + event) : "");
         URL u = new URL(s);
         log.log(Level.FINE, "Sending TrackerClient request: " + u);
-
+        if (mlistener != null)
+        	mlistener.message("Sending tracker-request: "+u);
+        
         URLConnection c = u.openConnection();
         c.connect();
         InputStream in = c.getInputStream();
@@ -217,6 +231,8 @@ public class TrackerClient extends Thread
         TrackerInfo info = new TrackerInfo(in, coordinator.getID(),
             coordinator.getMetaInfo());
         log.log(Level.FINE, "TrackerClient response: " + info);
+        if (mlistener != null)
+        	mlistener.message("TrackerClient response: " + info);
         lastRequestTime = System.currentTimeMillis();
 
         String failure = info.getFailureReason();
@@ -254,5 +270,5 @@ public class TrackerClient extends Thread
      * The maximum number of times that we are allowed to fail to make an
      * initial contact with the tracker before we bail
      */
-    protected static final int MAX_FAILURE_COUNT = 2;
+    protected static final int MAX_FAILURE_COUNT = 200;
 }

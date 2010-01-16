@@ -70,4 +70,19 @@ public class ConsoleStorageReporter implements StorageListener
 
     /** The Java logger used to process our log events. */
     protected static final Logger log = Logger.getLogger("org.klomp.snark.storage");
+
+	public void storateGetPiece(Storage storage, int num) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void exception(Throwable t) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void message(Object msg) {
+		// TODO Auto-generated method stub
+		
+	}
 }

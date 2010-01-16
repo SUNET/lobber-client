@@ -288,9 +288,8 @@ public class Snark
             httpacceptor = null;
         }
 
-        PeerAcceptor peeracceptor = new PeerAcceptor(coordinator);
-        acceptor = new ConnectionAcceptor(serversocket, httpacceptor,
-            peeracceptor);
+        PeerAcceptor peeracceptor = new PeerAcceptor(coordinator,null);
+        acceptor = new ConnectionAcceptor(serversocket, httpacceptor,peeracceptor);
         acceptor.start();
 
         if (ip != null) {
@@ -298,7 +297,7 @@ public class Snark
                 + port + "/" + meta.getHexInfoHash() + ".torrent");
         }
 
-        trackerclient = new TrackerClient(meta, coordinator, port);
+        trackerclient = new TrackerClient(meta, coordinator, null, port);
         trackerclient.start();
         coordinator.setTracker(trackerclient);
     }

@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  */
 public class PeerMonitorTask extends TimerTask
 {
-    public static final long MONITOR_PERIOD = 10 * 1000; // Ten seconds.
+    public static final long MONITOR_PERIOD = 2 * 1000; // Ten seconds.
 
     private static final long KILOPERSECOND = 1024 * (MONITOR_PERIOD / 1000);
 

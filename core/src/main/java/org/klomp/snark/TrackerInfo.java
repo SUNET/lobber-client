@@ -72,7 +72,11 @@ public class TrackerInfo
             if (bePeers == null) {
                 throw new InvalidBEncodingException("No peer list");
             } else {
-                peers = getPeers(bePeers.getList(), my_id, metainfo);
+            	if (bePeers instanceof List) {
+            		peers = getPeers(bePeers.getList(), my_id, metainfo);
+            	} else { // binary fmt
+            		peers = getPeers(bePeers.getBytes(), my_id, metainfo);
+            	}
             }
         }
     }
@@ -102,6 +106,20 @@ public class TrackerInfo
 
         return peers;
     }
+    
+    public static Set<Peer> getPeers (byte[] pl, byte[] my_id, MetaInfo metainfo)
+	    throws IOException
+	{
+	    Set<Peer> peers = new HashSet<Peer>(pl.length / 6);
+	
+	    for (int i = 0; i < pl.length; i += 6) {
+	    	PeerID peerID = new PeerID(pl,i);
+	    	Peer peer = new Peer(peerID,my_id,metainfo);
+	    	peers.add(peer);
+	    }
+	
+	    return peers;
+	}
 
     public Set getPeers ()
     {

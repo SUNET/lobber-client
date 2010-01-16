@@ -39,11 +39,7 @@ public class Storage
 {
     private MetaInfo metainfo;
 
-    private long[] lengths;
-
-    private RandomAccessFile[] rafs;
-
-    private String[] names;
+    private List<FileRef> refs;
 
     private final StorageListener listener;
 
@@ -93,9 +89,17 @@ public class Storage
 
         long total = 0;
         ArrayList<Long> lengthsList = new ArrayList<Long>();
-        for (long length : lengths) {
-            total += length;
-            lengthsList.add(length);
+        List<List<String>> files = new ArrayList<List<String>>();
+        for (FileRef ref : refs) {
+            total += ref.getLength();
+            lengthsList.add(new Long(ref.getLength()));
+            List<String> file = new ArrayList<String>();
+            StringTokenizer st = new StringTokenizer(ref.getPath(), File.separator);
+            while (st.hasMoreTokens()) {
+                String part = st.nextToken();
+                file.add(part);
+            }
+            files.add(file);
         }
 
         piece_size = MIN_PIECE_SIZE;
@@ -110,17 +114,6 @@ public class Storage
         byte[] piece_hashes = new byte[20 * pieces];
         bitfield = new BitField(pieces);
         needed = 0;
-
-        List<List<String>> files = new ArrayList<List<String>>();
-        for (String element : names) {
-            List<String> file = new ArrayList<String>();
-            StringTokenizer st = new StringTokenizer(element, File.separator);
-            while (st.hasMoreTokens()) {
-                String part = st.nextToken();
-                file.add(part);
-            }
-            files.add(file);
-        }
 
         if (files.size() == 1) {
             files = null;
@@ -145,10 +138,12 @@ public class Storage
         }
 
         byte[] piece_hashes = metainfo.getPieceHashes();
-
+        
         byte[] piece = new byte[piece_size];
         for (int i = 0; i < pieces; i++) {
+        	listener.storateGetPiece(this, i);
             int length = getUncheckedPiece(i, piece, 0);
+            listener.storateGetPiece(this, i);
             digest.update(piece, 0, length);
             byte[] hash = digest.digest();
             for (int j = 0; j < 20; j++) {
@@ -172,29 +167,13 @@ public class Storage
 
     private void getFiles (File base) throws IOException
     {
-        ArrayList<File> files = new ArrayList<File>();
-        addFiles(files, base);
-
-        int size = files.size();
-        names = new String[size];
-        lengths = new long[size];
-        rafs = new RandomAccessFile[size];
-
-        int i = 0;
-        Iterator it = files.iterator();
-        while (it.hasNext()) {
-            File f = (File)it.next();
-            names[i] = f.getPath();
-            lengths[i] = f.length();
-            rafs[i] = new RandomAccessFile(f, "r");
-            i++;
-        }
+        refs = new ArrayList<FileRef>();
+        findFiles(refs, base);
     }
 
-    private static void addFiles (List<File> l, File f)
-    {
-        if (!f.isDirectory()) {
-            l.add(f);
+    private void findFiles(List<FileRef> l, File f) { 	
+    	if (!f.isDirectory()) {
+            l.add(new FileRef(f));
         } else {
             File[] files = f.listFiles();
             if (files == null) {
@@ -203,7 +182,7 @@ public class Storage
                 return;
             }
             for (File element : files) {
-                addFiles(l, element);
+                findFiles(l, element);
             }
         }
     }
@@ -248,20 +227,23 @@ public class Storage
     {
         File base = new File(filterName(metainfo.getName()));
 
-        List files = metainfo.getFiles();
+        List<List<String>> files = metainfo.getFiles();
         if (files == null) {
             // Create base as file.
             log.log(Level.INFO, "Creating/Checking file: " + base);
             if (!base.createNewFile() && !base.exists()) {
                 throw new IOException("Could not create file " + base);
             }
-
-            lengths = new long[1];
-            rafs = new RandomAccessFile[1];
-            names = new String[1];
-            lengths[0] = metainfo.getTotalLength();
-            rafs[0] = new RandomAccessFile(base, "rw");
-            names[0] = base.getName();
+            
+            refs = new ArrayList<FileRef>(1);
+            refs.add(new FileRef(base.getName(),metainfo.getTotalLength()));
+            
+//            lengths = new long[1];
+//            rafs = new RandomAccessFile[1];
+//            names = new String[1];
+//            lengths[0] = metainfo.getTotalLength();
+//            rafs[0] = new RandomAccessFile(base, "rw");
+//            names[0] = base.getName();
         } else {
             // Create base as dir.
             log.log(Level.INFO, "Creating/Checking directory: " + base);
@@ -269,18 +251,15 @@ public class Storage
                 throw new IOException("Could not create directory " + base);
             }
 
-            List ls = metainfo.getLengths();
+            List<Long> ls = metainfo.getLengths();
             int size = files.size();
             long total = 0;
-            lengths = new long[size];
-            rafs = new RandomAccessFile[size];
-            names = new String[size];
+            refs = new ArrayList<FileRef>(size);
+            
             for (int i = 0; i < size; i++) {
-                File f = createFileFromNames(base, (List)files.get(i));
-                lengths[i] = ((Long)ls.get(i)).longValue();
-                total += lengths[i];
-                rafs[i] = new RandomAccessFile(f, "rw");
-                names[i] = f.getName();
+                File f = createFileFromNames(base, files.get(i));
+                FileRef ref = new FileRef(f.getAbsolutePath(),ls.get(i).longValue());
+                total += ref.getLength();
             }
 
             // Sanity check for metainfo file.
@@ -302,10 +281,10 @@ public class Storage
         return name.replace(File.separatorChar, '_');
     }
 
-    private File createFileFromNames (File base, List names) throws IOException
+    private File createFileFromNames (File base, List<String> names) throws IOException
     {
         File f = null;
-        Iterator it = names.iterator();
+        Iterator<String> it = names.iterator();
         while (it.hasNext()) {
             String name = filterName((String)it.next());
             if (it.hasNext()) {
@@ -333,21 +312,23 @@ public class Storage
         boolean resume = false;
 
         // Make sure all files are available and of correct length
-        for (int i = 0; i < rafs.length; i++) {
-            long length = rafs[i].length();
-            if (length == lengths[i]) {
+        for (FileRef ref : refs) {
+            long length = ref.getLength();
+            RandomAccessFile rafs = ref.getRandomAccessFile("rw");
+            if (length == rafs.length()) {
                 if (listener != null) {
                     listener.storageAllocated(this, length);
                 }
                 resume = true; // XXX Could dynamicly check
             } else if (length == 0) {
-                allocateFile(i);
+                allocateFile(ref);
             } else {
-                log.log(Level.FINE, "Truncating '" + names[i]
-                    + "' from " + lengths + " to " + lengths[i] + "bytes");
-                rafs[i].setLength(lengths[i]);
-                allocateFile(i);
+                log.log(Level.FINE, "Truncating '" + ref.getName()
+                    + "' from " + rafs.length() + " to " + length + "bytes");
+                rafs.setLength(length);
+                allocateFile(ref);
             }
+            ref.close();
         }
 
         // Check which pieces match and which don't
@@ -373,22 +354,23 @@ public class Storage
         }
     }
 
-    private void allocateFile (int nr) throws IOException
+    private void allocateFile (FileRef ref) throws IOException
     {
         // XXX - Is this the best way to make sure we have enough space for
         // the whole file?
-        listener.storageCreateFile(this, names[nr], lengths[nr]);
+    	long length = ref.getLength();
+        listener.storageCreateFile(this, ref.getName(), length);
         final int ZEROBLOCKSIZE = metainfo.getPieceLength(0);
         byte[] zeros = new byte[ZEROBLOCKSIZE];
         int i;
-        for (i = 0; i < lengths[nr] / ZEROBLOCKSIZE; i++) {
-            rafs[nr].write(zeros);
+        for (i = 0; i < length / ZEROBLOCKSIZE; i++) {
+            ref.getRandomAccessFile("rw").write(zeros);
             if (listener != null) {
                 listener.storageAllocated(this, ZEROBLOCKSIZE);
             }
         }
-        int size = (int)(lengths[nr] - i * ZEROBLOCKSIZE);
-        rafs[nr].write(zeros, 0, size);
+        int size = (int)(length - i * ZEROBLOCKSIZE);
+        ref.getRandomAccessFile("rw").write(zeros, 0, size);
         if (listener != null) {
             listener.storageAllocated(this, size);
         }
@@ -400,9 +382,9 @@ public class Storage
      */
     public void close () throws IOException
     {
-        for (RandomAccessFile element : rafs) {
-            synchronized (element) {
-                element.close();
+        for (FileRef ref : refs) {
+            synchronized (ref) {
+                ref.close();
             }
         }
     }
@@ -415,6 +397,10 @@ public class Storage
     {
         if (!bitfield.get(piece)) {
             return null;
+        }
+        
+        if (listener != null) {
+        	listener.storateGetPiece(this, piece);
         }
 
         byte[] bs = new byte[metainfo.getPieceLength(piece)];
@@ -454,26 +440,24 @@ public class Storage
 
         long start = piece * metainfo.getPieceLength(0);
         int i = 0;
-        long raflen = lengths[i];
+        FileRef ref = refs.get(i);
+        long raflen = ref.getLength();
         while (start > raflen) {
-            i++;
             start -= raflen;
-            raflen = lengths[i];
+            ref = refs.get(++i);
+            raflen = ref.getLength();
         }
-
+        
         int written = 0;
         int off = 0;
         while (written < length) {
             int need = length - written;
             int len = (start + need < raflen) ? need : (int)(raflen - start);
-            synchronized (rafs[i]) {
-                rafs[i].seek(start);
-                rafs[i].write(bs, off + written, len);
-            }
+            ref.seekAndWrite(bs, start, off+written, len);
             written += len;
             if (need - len > 0) {
-                i++;
-                raflen = lengths[i];
+                ref = refs.get(++i);
+                raflen = ref.getLength();
                 start = 0;
             }
         }
@@ -481,32 +465,70 @@ public class Storage
         return true;
     }
 
+    private FileRef findPieceRef(int piece) {
+    	long start = piece * metainfo.getPieceLength(0);
+        int length = metainfo.getPieceLength(piece);
+        int i = 0;
+        FileRef ref = refs.get(i);
+        long raflen = ref.getLength();
+        while (start > raflen) {
+        	start -= raflen;
+        	ref = refs.get(++i);
+            raflen = ref.getLength();
+        }
+        
+        return ref;
+    }
+    
     private int getUncheckedPiece (int piece, byte[] bs, int off)
         throws IOException
     {
-        // XXX - copy/paste code from putPiece().
-        long start = piece * metainfo.getPieceLength(0);
-        int length = metainfo.getPieceLength(piece);
+    	long start = piece * metainfo.getPieceLength(0);
+    	int length = metainfo.getPieceLength(piece);
+    	listener.message("start at "+start);
+    	listener.message("read "+length+" bytes");
         int i = 0;
-        long raflen = lengths[i];
+        FileRef ref = refs.get(i);
+        
+        listener.message("start ref("+i+")="+ref);
+        
+        long raflen = ref.getLength();
         while (start > raflen) {
-            i++;
             start -= raflen;
-            raflen = lengths[i];
+            ref = refs.get(++i);
+            raflen = ref.getLength();
         }
+        
+        listener.message("seeked to ref("+i+")="+ref+" @ "+start);
 
         int read = 0;
         while (read < length) {
+        	listener.message("read: ("+i+") "+read+"/"+length);
             int need = length - read;
+            listener.message("need: "+need+" bytes from "+raflen+" bytes");
             int len = (start + need < raflen) ? need : (int)(raflen - start);
-            synchronized (rafs[i]) {
-                rafs[i].seek(start);
-                rafs[i].readFully(bs, off + read, len);
-            }
+            listener.message("seekAndRead "+start+" -> "+(off+read)+" "+len+" bytes");
+            ref.seekAndRead(bs, start, off+read, len);
+            
+//            try {
+//    			RandomAccessFile rafs = ref.getRandomAccessFile("rw");
+//    			synchronized (rafs) {
+//	    			listener.message(rafs);
+//	    			rafs.seek(start);
+//	    			listener.message("seek to "+start);
+//	    			rafs.readFully(bs,off+read,len);
+//	    			listener.message("read "+len+" bytes");
+//	    			ref.close();
+//    			}
+//    		} catch (IOException ex) {
+//    			ref.close();
+//    			throw ex;
+//    		}
+            
             read += len;
             if (need - len > 0) {
-                i++;
-                raflen = lengths[i];
+                ref = refs.get(++i);
+                raflen = ref.getLength();
                 start = 0;
             }
         }

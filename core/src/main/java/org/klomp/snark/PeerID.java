@@ -31,7 +31,7 @@ import org.klomp.snark.bencode.InvalidBEncodingException;
 
 public class PeerID implements Comparable
 {
-    private final byte[] id;
+    private byte[] id;
 
     private final InetAddress address;
 
@@ -39,6 +39,30 @@ public class PeerID implements Comparable
 
     private final int hash;
 
+    private final int unsignedShortToInt(byte[] b, int offset) 
+    {
+        int i = 0;
+        i |= b[0+offset] & 0xFF;
+        i <<= 8;
+        i |= b[1+offset] & 0xFF;
+        return i;
+    }
+
+    public void setId(byte[] id) {
+		this.id = id;
+	}
+    
+    public PeerID (byte[] ids, int offset) throws UnknownHostException {
+    	byte addr[] = new byte[4];
+    	for (int i = 0; i < 4; i++) {
+    		addr[i] = ids[i+offset];
+    	}
+    	this.address = InetAddress.getByAddress(addr);
+    	this.port = unsignedShortToInt(ids,4+offset);
+    	this.id = new byte[] { 0 };
+    	hash = calculateHash();
+    }
+    
     public PeerID (byte[] id, InetAddress address, int port)
     {
         this.id = id;
@@ -123,6 +147,9 @@ public class PeerID implements Comparable
     public boolean sameID (PeerID pid)
     {
         boolean equal = true;
+        if (pid.getID().length != getID().length)
+        	return false;
+        
         for (int i = 0; equal && i < id.length; i++) {
             equal = id[i] == pid.id[i];
         }

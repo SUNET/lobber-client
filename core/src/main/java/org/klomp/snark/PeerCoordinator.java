@@ -217,10 +217,13 @@ public class PeerCoordinator implements PeerListener
             return;
         }
 
+        System.err.println("Adding peer "+peer);
+        
         boolean need_more;
         synchronized (peers) {
             need_more = !peer.isConnected() && peers.size() < MAX_CONNECTIONS;
         }
+        System.err.println("need_more: "+need_more);
 
         if (need_more) {
             // Run the peer with us as listener and the current bitfield.

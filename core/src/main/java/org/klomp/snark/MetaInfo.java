@@ -227,7 +227,7 @@ public class MetaInfo
      * Returns a list of lists of file name hierarchies or null if it is a
      * single name. It has the same size as the list returned by getLengths().
      */
-    public List getFiles ()
+    public List<List<String>> getFiles ()
     {
         // XXX - Immutable?
         return files;
@@ -238,7 +238,7 @@ public class MetaInfo
      * null if it is a single file. It has the same size as the list returned by
      * getFiles().
      */
-    public List getLengths ()
+    public List<Long> getLengths ()
     {
         // XXX - Immutable?
         return lengths;

@@ -80,6 +80,7 @@ public class Peer implements Comparable<Peer>
         this.metainfo = metainfo;
 
         byte[] id = handshake(bis, bos);
+        _t("handshake completed");
         this.peerID = new PeerID(id, sock.getInetAddress(), sock.getPort());
     }
 
@@ -145,11 +146,15 @@ public class Peer implements Comparable<Peer>
      */
     public void runConnection (PeerListener listener, BitField bitfield)
     {
+    	_t("Entering runConnection");
+    	
         if (state != null) {
             throw new IllegalStateException("Peer already started");
         }
 
+        System.err.println("runConnection to "+peerID);
         try {
+        	System.err.println("Connection to "+peerID+" needs a handshake");
             // Do we need to handshake?
             if (din == null) {
                 Socket sock = new Socket(peerID.getAddress(), peerID.getPort());
@@ -159,21 +164,37 @@ public class Peer implements Comparable<Peer>
                     sock.getOutputStream());
                 byte[] id = handshake(bis, bos);
                 byte[] expected_id = peerID.getID();
+                
+                if (expected_id.length != 20) {
+                	synchronized (this) {
+                		this.peerID.setId(id); 
+                		expected_id = id;
+                	}
+                }
+                
+                System.err.println("Expected: "+PeerID.idencode(expected_id));
+                System.err.println("Got: "+PeerID.idencode(id));
+                
                 if (!Arrays.equals(expected_id, id)) {
                     throw new IOException("Unexpected peerID '"
                         + PeerID.idencode(id) + "' expected '"
                         + PeerID.idencode(expected_id) + "'");
                 }
+                
             }
 
+            System.err.println("connecting...");
             PeerConnectionIn in = new PeerConnectionIn(this, din);
             PeerConnectionOut out = new PeerConnectionOut(this, dout);
             PeerState s = new PeerState(this, listener, metainfo, in, out);
-
+            
+            System.err.println("bitfield: "+bitfield);
             // Send our bitmap
             if (bitfield != null) {
                 s.out.sendBitfield(bitfield);
             }
+            
+            System.err.println("connected");
 
             // We are up and running!
             state = s;
@@ -194,6 +215,10 @@ public class Peer implements Comparable<Peer>
         }
     }
 
+    private void _t(String msg) {
+    	System.err.println(getPeerID()+": "+msg);
+    }
+    
     /**
      * Sets DataIn/OutputStreams, does the handshake and returns the id reported
      * by the other side.
@@ -201,6 +226,8 @@ public class Peer implements Comparable<Peer>
     private byte[] handshake (BufferedInputStream bis, BufferedOutputStream bos)
         throws IOException
     {
+    	_t("begin hadnshake");
+    	
         din = new DataInputStream(bis);
         dout = new DataOutputStream(bos);
 
@@ -216,34 +243,45 @@ public class Peer implements Comparable<Peer>
         // Handshake write - peer id
         dout.write(my_id);
         dout.flush();
+        _t("waiting for handshake response");
 
         // Handshake read - header
         byte b = din.readByte();
+        _t("len: "+b);
         if (b != 19) {
             throw new IOException("Handshake failure, expected 19, got "
                 + (b & 0xff));
         }
-
+        
         byte[] bs = new byte[19];
-        din.readFully(bs);
+        bs[0] = b;
+        _t("reading 19 bytes more...");
+        din.readFully(bs,0,19);
+        _t("got response: "+bs);
         String bittorrentProtocol = new String(bs, "UTF-8");
+        _t("response is string "+bittorrentProtocol);
         if (!"BitTorrent protocol".equals(bittorrentProtocol)) {
             throw new IOException("Handshake failure, expected "
                 + "'Bittorrent protocol', got '" + bittorrentProtocol + "'");
         }
 
+        _t("reading padding...");
         // Handshake read - zeros
         din.readFully(zeros);
 
+        _t("reading metainfo hash...");
         // Handshake read - metainfo hash
         bs = new byte[20];
         din.readFully(bs);
+        _t("got metainfo: "+bs);
         if (!Arrays.equals(shared_hash, bs)) {
             throw new IOException("Unexpected MetaInfo hash");
         }
 
+        _t("reading actual peer id");
         // Handshake read - peer id
         din.readFully(bs);
+        _t("returning peerID "+new String(bs,"UTF-8"));
         return bs;
     }
 
@@ -320,7 +358,7 @@ public class Peer implements Comparable<Peer>
      * connected.
      */
     public boolean isInteresting ()
-    {
+    { 
         PeerState s = state;
         return (s != null) && s.interesting;
     }
