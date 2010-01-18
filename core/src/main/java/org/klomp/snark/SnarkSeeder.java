@@ -29,6 +29,9 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.sbbi.upnp.impls.InternetGatewayDevice;
+import net.sbbi.upnp.messages.UPNPResponseException;
+
 /**
  * Main Snark object used to fetch or serve a given file.
  * 
@@ -37,10 +40,10 @@ import java.util.logging.Logger;
 public class SnarkSeeder
 {
     /** The lowest port Snark will listen on for connections */
-    public final static int MIN_PORT = 6881;
+    public final static int MIN_PORT = 46881;
 
     /** The highest port Snark will listen on for connections */
-    public final static int MAX_PORT = 6889;
+    public final static int MAX_PORT = 47889;
 
     private String announce;
     
@@ -63,6 +66,8 @@ public class SnarkSeeder
     public TrackerClient trackerclient;
 
     private MessageListener mlistener;
+    
+    private InternetGatewayDevice[] igds;
     
     /**
      * Constructs a Snark client.
@@ -130,6 +135,37 @@ public class SnarkSeeder
         return activity;
     }
 
+    private void upnpMapPort(int port) {
+    	try {
+    		int discoveryTimeout = 5000; // 5 secs to receive a response from devices
+	        igds = InternetGatewayDevice.getDevices( discoveryTimeout );
+	        if ( igds != null ) {
+	          for (InternetGatewayDevice igd : igds) {
+		          System.err.println( "Found device " + igd.getIGDRootDevice().getModelName()+"("+igd.getIGDRootDevice().getFriendlyName()+")" );
+		          boolean mapped = igd.addPortMapping( "Lobber BitTorrent Client",null, port, port,ip[0], 0, "TCP" );
+		          if ( mapped ) {
+		            System.err.println( "Port "+port+" mapped to " + ip[0] );
+		          }
+	          }
+	        }
+    	} catch (Exception ex) {
+    		ex.printStackTrace();
+    	}
+    }
+
+    private void upnpUnMapPort(int port) {
+		if (igds != null) {
+			for (InternetGatewayDevice igd : igds) {
+				System.err.println( "Attempting to remove mapping for port "+port+" on device " + igd.getIGDRootDevice().getModelName()+"("+igd.getIGDRootDevice().getFriendlyName()+")" );
+				try {
+	          		igd.deletePortMapping(null, port, "TCP");
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+		}
+    }
+    
     /**
      * Establishes basic information such as {@link #id}, opens ports,
      * and determines whether to act as a peer or seed.
@@ -180,6 +216,8 @@ public class SnarkSeeder
         } else {
             log.log(Level.FINE, "Listening on port: " + port);
         }
+        
+        upnpMapPort(port);
         
         if (mlistener != null)
         	mlistener.message("Listening on port "+port);
@@ -233,6 +271,37 @@ public class SnarkSeeder
         coordinator.setTracker(trackerclient);
     }
 
+    public void halt() {
+    	log.log(Level.INFO, "Shutting down...");
+
+    	log.log(Level.FINE, "Removing UPNP NAT port mapping...");
+    	upnpUnMapPort(port);
+    	
+        log.log(Level.FINE, "Halting ConnectionAcceptor...");
+        if (this.acceptor != null) {
+            this.acceptor.halt();
+        }
+
+        log.log(Level.FINE, "Halting TrackerClient...");
+        if (this.trackerclient != null) {
+            this.trackerclient.halt();
+        }
+
+        log.log(Level.FINE, "Halting PeerCoordinator...");
+        if (this.coordinator != null) {
+            this.coordinator.halt();
+        }
+
+        log.log(Level.FINE, "Closing Storage...");
+        if (this.storage != null) {
+            try {
+                this.storage.close();
+            } catch (IOException ioe) {
+                log.log(Level.SEVERE, "Couldn't properly close storage", ioe);
+            }
+        }
+    }
+    
     /**
      * Aborts program abnormally.
      */

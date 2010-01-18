@@ -1,5 +1,7 @@
 package net.nordu.lobber.client.applet;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -7,29 +9,34 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.InetAddress;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JApplet;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.JToggleButton;
+import javax.swing.JToolTip;
 import javax.swing.SwingUtilities;
 
 import org.klomp.snark.CoordinatorListener;
 import org.klomp.snark.MessageListener;
 import org.klomp.snark.Peer;
 import org.klomp.snark.PeerCoordinator;
-import org.klomp.snark.PeerMonitorTask;
 import org.klomp.snark.ScrapeClient;
 import org.klomp.snark.ScrapeInfo;
 import org.klomp.snark.SnarkSeeder;
+import org.klomp.snark.SnarkSeederShutdown;
 import org.klomp.snark.Storage;
 import org.klomp.snark.StorageListener;
 import org.klomp.snark.ScrapeInfo.ScrapeStats;
@@ -41,7 +48,6 @@ public class LobberClientApplet extends JApplet {
 	 */
 	private static final long serialVersionUID = 3328873182884573174L;
 	private String tracker;
-	private LobberUI lobberUI;
 	private SnarkSeeder seeder;
 	
 	
@@ -49,7 +55,6 @@ public class LobberClientApplet extends JApplet {
 		tracker = getParameter("tracker");
 		setContentPane(new LobberUI());
 		getContentPane().setVisible(true);
-		System.err.println("kaka3");
 	}
 	
 	@Override
@@ -72,41 +77,60 @@ public class LobberClientApplet extends JApplet {
 		/**
 		 * 
 		 */
+		
 		private static final long serialVersionUID = -7301588955270617709L;
 		private JButton uploadButton;
 		private JProgressBar progressBar;
-		private JTextArea taskOutput;
+		private boolean done = false;
+		private boolean logEnabled = false;
+		private JDialog logDialog;
+		private JTextField progressLabel;
+		
+		private static final String UPLOAD_ICON = "/Earth-Upload-icon.png";
 		
 		private void status(String msg) {
 			getAppletContext().showStatus(msg);
 		}
 		
 		private void progress(String msg) {
-			taskOutput.append(msg+"\n");
+			System.err.println(msg);
+			progressLabel.setText(msg);
 		}
 		
 		public LobberUI() {
-			
+			setBackground(Color.WHITE);
 			setLayout(new BorderLayout());
 			//setOpaque(true);
 			setVisible(true);
-			uploadButton = new JButton("Upload");
-
+			uploadButton = new JButton(new ImageIcon(LobberUI.class.getResource(UPLOAD_ICON)));
+			uploadButton.setToolTipText("Select a file or directory to upload");
+			uploadButton.setBackground(Color.WHITE);
+			
 	        progressBar = new JProgressBar(0, 100);
 	        progressBar.setValue(0);
 	        progressBar.setStringPainted(true);
 
-	        taskOutput = new JTextArea(5, 20);
-	        taskOutput.setMargin(new Insets(5,5,5,5));
-	        taskOutput.setEditable(false);
-
 	        JPanel panel = new JPanel();
+	        panel.setBackground(Color.WHITE);
 	        panel.add(uploadButton);
-	        panel.add(progressBar);
+	        
+	        JPanel progressPanel = new JPanel();
+	        progressPanel.setLayout(new BorderLayout());
+	        progressPanel.setBackground(Color.WHITE);
+	        progressLabel = new JTextField(40);
+	        progressLabel.setBackground(Color.WHITE);
+	        progressLabel.setFont(new Font(Font.MONOSPACED,Font.PLAIN,9));
+	        progressLabel.setBorder(BorderFactory.createEmptyBorder());
+	        progressLabel.setEditable(false);
+	        progressPanel.add(progressBar,BorderLayout.NORTH);
+	        progressPanel.add(progressLabel,BorderLayout.SOUTH);
+	        
+	        panel.add(progressPanel);
 
 	        add(panel, BorderLayout.PAGE_START);
-	        add(new JScrollPane(taskOutput), BorderLayout.CENTER);
-	        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+	        
+	        setBorder(BorderFactory.createTitledBorder("Lobber BitTorrent Client"));
+	        //setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 			
 			uploadButton.addActionListener(this);
 		}
@@ -122,31 +146,33 @@ public class LobberClientApplet extends JApplet {
 				fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 				int rc = fileChooser.showOpenDialog(getContentPane());
 				if (rc == JFileChooser.APPROVE_OPTION) {
+					uploadButton.setEnabled(false);
+					progressBar.setIndeterminate(true);
 		            File file = fileChooser.getSelectedFile();
 		            StorageListener slistener = new StorageListener() {
 		    			
 		    			public void storageCreateFile(Storage arg0, String arg1, long arg2) {
-		    				progress("created "+arg1+" "+arg2);
+		    				System.err.println("created "+arg1+" "+arg2);
 		    			}
 		    			
 		    			public void storageChecked(Storage arg0, int arg1, boolean arg2) {
-		    				progress("checked "+arg1+" "+arg2);
+		    				System.err.println("checked "+arg1+" "+arg2);
 		    			}
 		    			
 		    			public void storageAllocated(Storage arg0, long arg1) {
-		    				progress("allocated "+arg1);
+		    				System.err.println("allocated "+arg1);
 		    			}
 		    			
 		    			public void storageAllChecked(Storage arg0) {
-		    				progress("all checked");
+		    				System.err.println("all checked");
 		    			}
 	
 						public void storateGetPiece(Storage storage,int num) {
-							progress("get piece "+num);
+							System.err.println("get piece "+num);
 						}
 						
 						public void message(Object msg) {
-							progress(msg.toString());
+							System.err.println(msg.toString());
 						}
 						
 						public void exception(Throwable t) {
@@ -159,7 +185,7 @@ public class LobberClientApplet extends JApplet {
 		    		CoordinatorListener clistener = new CoordinatorListener() {
 						
 						public void peerChange(PeerCoordinator coordinator, Peer peer) {
-							progress("Peer "+peer.getPeerID()+" has downloaded "+ peer.getUploaded()+" bytes");
+							System.err.println("Peer "+peer.getPeerID()+" has downloaded "+ peer.getUploaded()+" bytes");
 						}
 						
 					};
@@ -167,7 +193,7 @@ public class LobberClientApplet extends JApplet {
 					MessageListener mlistener = new MessageListener() {
 						
 						public void message(Object msg) {
-							progress(msg.toString());
+							System.err.println(msg.toString());
 						}
 						
 						public void exception(Throwable t) {
@@ -177,36 +203,47 @@ public class LobberClientApplet extends JApplet {
 						}
 					};
 				
+					
 				   String addrs[] = InetUtils.getInterfaces();
 		           seeder = new SnarkSeeder(file,addrs,-1,tracker,slistener,clistener,mlistener);
-		           progress("Serving data...");
+		           final SnarkSeederShutdown shutdown = new SnarkSeederShutdown(seeder, null);
+			       Runtime.getRuntime().addShutdownHook(shutdown);
+		           progress("Setting up network...");
 		           seeder.setupNetwork();
+		           final long sz = seeder.meta.getTotalLength();
+		           progress("Starting monitor...");
 		           
 		           Timer timer = new Timer(true);
 		           TimerTask monitor = new TimerTask() {
 		        	    @Override
 			        	public void run() {
-		        	    	ScrapeClient scrape = new ScrapeClient();
-		        	    	String scrapeUrl = tracker;
-		        	    	scrapeUrl = scrapeUrl.replace("announce", "scrape");
-		        	    	progress("Stats: u="+seeder.coordinator.getUploaded()+" d="+seeder.coordinator.getDownloaded()+" p="+seeder.coordinator.getPeers());
-		        	    	try {
-		        	    		byte[] info_hash = seeder.meta.getInfoHash();
-		        	    		ScrapeInfo info = scrape.scrape(scrapeUrl,info_hash);
-		        	    		if (info.getFailureReason() != null)
-		        	    			throw new IOException(info.getFailureReason());
-		        	    		ScrapeStats stats = info.getScrapeStats(info_hash);
-		        	    		System.err.println("infohash: "+new String(info_hash));
-		        	    		if (stats != null)
-		        	    			progress(stats.toString());
-		        	    	} catch (IOException ex) {
-		        	    		ex.printStackTrace();
+		        	    	
+		        	    	if (seeder.coordinator.getPeers() < 2)
+		        	    		progressBar.setIndeterminate(true);
+		        	    	
+		        	    	long ul = seeder.coordinator.getUploaded();
+		        	    	progressBar.setValue((int)(ul/sz));
+		        	    	
+		        	    	//progress("Stats: u="+seeder.coordinator.getUploaded()+" d="+seeder.coordinator.getDownloaded()+" p="+seeder.coordinator.getPeers());
+		        	    	ScrapeStats stats = getStats();
+		        	    	if (stats != null) {
+		        	    		progress(stats.toString());
+		        	    		done = stats.completed > 1;
+		        	    	}
+		        	    	
+		        	    	if (done) {
+		        	    		progressBar.setIndeterminate(false);
+		        	    		progressBar.setValue(100);
+		        	    		progress((stats.downloaded)+" peers completed");
+		        	    		shutdown.run();
+		        	    		uploadButton.setEnabled(true);
+		        	    		this.cancel();
 		        	    	}
 			        	}
 		           };
-		           timer.schedule(monitor,2000,2000);
+		           timer.schedule(monitor,1000,1000);
 		           
-		           progress("Collecting pieces...");
+		           progress("Serving "+sz+" bytes...");
 		           seeder.collectPieces();
 		        }
 			} catch (Exception ex) {
@@ -216,6 +253,21 @@ public class LobberClientApplet extends JApplet {
 
 	}
 	
+	private ScrapeStats getStats() {
+		try {
+			ScrapeClient scrape = new ScrapeClient();
+	    	String scrapeUrl = tracker;
+	    	scrapeUrl = scrapeUrl.replace("announce", "scrape");
+    		byte[] info_hash = seeder.meta.getInfoHash();
+    		ScrapeInfo info = scrape.scrape(scrapeUrl,info_hash);
+    		if (info.getFailureReason() != null)
+    			throw new IOException(info.getFailureReason());
+    		return info.getScrapeStats(info_hash);
+		} catch (IOException ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
 	
 	public String getAppletInfo() {
         return "Title: Lobber Client\n"
