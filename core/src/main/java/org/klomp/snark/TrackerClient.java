@@ -29,8 +29,6 @@ import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import net.nordu.lobber.client.applet.ExceptionUtils;
-
 /**
  * Informs metainfo tracker of events and gets new peers for peer coordinator.
  * 
@@ -114,10 +112,7 @@ public class TrackerClient extends Thread
                     }
                     started = true;
                 } catch (Throwable ioe) {
-                	if (mlistener != null) {
-                		mlistener.message("Could not contact tracker at '"+ announce+": "+ExceptionUtils.stackTrace(ioe));
-                		//mlistener.exception(ioe);
-                	}
+                	ioe.printStackTrace();
                 	
                     // Probably not fatal (if it doesn't last to long...)
                     log.log(Level.WARNING, "Could not contact tracker at '"
@@ -126,9 +121,7 @@ public class TrackerClient extends Thread
 
                 if (!started) {
                     failures++;
-                    log.log(Level.FINER, "     Retrying in 5s...");
-                    if (mlistener != null)
-                    	mlistener.message("Retrying in 5s...");
+                    log.log(Level.WARNING, "     Retrying in 5s...");
                     try {
                         // Sleep five seconds...
                         Thread.sleep(5 * 1000);
@@ -210,8 +203,7 @@ public class TrackerClient extends Thread
             + ((event != NO_EVENT) ? ("&event=" + event) : "");
         URL u = new URL(s);
         log.log(Level.FINE, "Sending TrackerClient request: " + u);
-        if (mlistener != null)
-        	mlistener.message("Sending tracker-request: "+u);
+        System.err.println("Sending tracker-request: "+u);
         
         URLConnection c = u.openConnection();
         c.connect();
@@ -231,8 +223,7 @@ public class TrackerClient extends Thread
         TrackerInfo info = new TrackerInfo(in, coordinator.getID(),
             coordinator.getMetaInfo());
         log.log(Level.FINE, "TrackerClient response: " + info);
-        if (mlistener != null)
-        	mlistener.message("TrackerClient response: " + info);
+        System.err.println("TrackerClient response: " + info);
         lastRequestTime = System.currentTimeMillis();
 
         String failure = info.getFailureReason();

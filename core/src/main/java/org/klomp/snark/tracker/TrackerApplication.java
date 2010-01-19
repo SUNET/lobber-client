@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.util.HashSet;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.klomp.snark.ConnectionAcceptor;
 import org.klomp.snark.HttpAcceptor;

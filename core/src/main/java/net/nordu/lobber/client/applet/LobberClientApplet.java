@@ -2,7 +2,6 @@ package net.nordu.lobber.client.applet;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.ByteArrayOutputStream;
@@ -16,17 +15,11 @@ import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JApplet;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.JToggleButton;
-import javax.swing.JToolTip;
 import javax.swing.SwingUtilities;
 
 import org.klomp.snark.CoordinatorListener;
@@ -82,18 +75,12 @@ public class LobberClientApplet extends JApplet {
 		private JButton uploadButton;
 		private JProgressBar progressBar;
 		private boolean done = false;
-		private boolean logEnabled = false;
-		private JDialog logDialog;
 		private JTextField progressLabel;
 		
 		private static final String UPLOAD_ICON = "/Earth-Upload-icon.png";
 		
-		private void status(String msg) {
-			getAppletContext().showStatus(msg);
-		}
-		
 		private void progress(String msg) {
-			System.err.println(msg);
+			System.err.println("Progress: "+msg);
 			progressLabel.setText(msg);
 		}
 		
@@ -193,7 +180,7 @@ public class LobberClientApplet extends JApplet {
 					MessageListener mlistener = new MessageListener() {
 						
 						public void message(Object msg) {
-							System.err.println(msg.toString());
+							progress(msg.toString());
 						}
 						
 						public void exception(Throwable t) {
@@ -202,10 +189,22 @@ public class LobberClientApplet extends JApplet {
 							JOptionPane.showMessageDialog(getContentPane(), baos.toString());
 						}
 					};
-				
-					
-				   String addrs[] = InetUtils.getInterfaces();
-		           seeder = new SnarkSeeder(file,addrs,-1,tracker,slistener,clistener,mlistener);
+
+				   boolean usingLinkLocalAddress = false;
+				   String addrs[] = InetUtils.getAddresses(new NonLocalUnicastAddressFilter());
+				   if (addrs == null || addrs.length == 0) {
+					   addrs = InetUtils.getAddresses(new NonLoopbackUnicastAddressFilter());
+					   usingLinkLocalAddress = true;
+				   }
+				   
+				   System.err.println("Addresses: ");
+				   for (String addr: addrs) {
+					   System.err.println(addr);
+				   }
+				   System.err.println("using link locals: "+usingLinkLocalAddress);
+					   
+				   
+		           seeder = new SnarkSeeder(file,addrs,usingLinkLocalAddress,-1,tracker,slistener,clistener,mlistener);
 		           final SnarkSeederShutdown shutdown = new SnarkSeederShutdown(seeder, null);
 			       Runtime.getRuntime().addShutdownHook(shutdown);
 		           progress("Setting up network...");

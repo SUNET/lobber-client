@@ -9,20 +9,24 @@ import java.util.List;
 
 public class InetUtils {
 
-	 public static String[] getInterfaces() throws SocketException {
+	public static String[] getAddresses(AddressFilter filter) throws SocketException {
 		 List<String> addrs = new ArrayList<String>();
 		 
          Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
 
          while(e.hasMoreElements()) {
             NetworkInterface ni = (NetworkInterface) e.nextElement();
-
+            
+            System.err.println(ni.getName());
+            if (ni.getName().startsWith("vmnet"))
+            	continue;
+            
             Enumeration<InetAddress> e2 = ni.getInetAddresses();
 
             while (e2.hasMoreElements()){
                InetAddress ip = (InetAddress) e2.nextElement();
-               if (!ip.toString().startsWith("127")) {
-            	   addrs.add(ip.toString());
+               if (filter.accept(ip)) {
+            	   addrs.add(ip.getHostAddress());
                }
             }
          }
@@ -31,4 +35,8 @@ public class InetUtils {
          return (String[])addrs.toArray(res);
 	 }
 
+	 public static String[] getAddresses() throws SocketException {
+		 return getAddresses(new NonLocalUnicastAddressFilter());
+	 }
+	 
 }

@@ -6,10 +6,10 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Logger;
-import java.util.logging.Level;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.klomp.snark.CoordinatorListener;
 import org.klomp.snark.Peer;

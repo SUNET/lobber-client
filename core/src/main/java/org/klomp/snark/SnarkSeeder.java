@@ -30,7 +30,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.sbbi.upnp.impls.InternetGatewayDevice;
-import net.sbbi.upnp.messages.UPNPResponseException;
 
 /**
  * Main Snark object used to fetch or serve a given file.
@@ -69,6 +68,8 @@ public class SnarkSeeder
     
     private InternetGatewayDevice[] igds;
     
+    private boolean needsNATMapping;
+    
     /**
      * Constructs a Snark client.
      * @param path The address of the torrent to download or file to serve
@@ -78,7 +79,7 @@ public class SnarkSeeder
      * @param slistener A custom {@link StorageListener} to use
      * @param clistener A custom {@link CoordinatorListener} to use
      */
-    public SnarkSeeder (File path, String[] ip, int user_port, String announce,
+    public SnarkSeeder (File path, String[] ip, boolean needsNATMapping, int user_port, String announce,
         StorageListener slistener, CoordinatorListener clistener, MessageListener mlistener)
     {
         this.slistener = slistener;
@@ -88,6 +89,7 @@ public class SnarkSeeder
         this.ip = ip;
         this.announce = announce;
         this.mlistener = mlistener;
+        this.needsNATMapping = needsNATMapping;
         
         // Create a new ID and fill it with something random. First nine
         // zeros bytes, then three bytes filled with snark and then
@@ -135,28 +137,44 @@ public class SnarkSeeder
         return activity;
     }
 
-    private void upnpMapPort(int port) {
+    private void upnpMapAnyIP(int port) {
+    	for (String ipaddr: ip) {
+        	if (upnpMapPort(port,ipaddr))
+        		return;
+        }
+    }
+    
+    //TODO - fix exception logic here
+    private boolean upnpMapPort(int port, String ip) {
     	try {
     		int discoveryTimeout = 5000; // 5 secs to receive a response from devices
 	        igds = InternetGatewayDevice.getDevices( discoveryTimeout );
 	        if ( igds != null ) {
 	          for (InternetGatewayDevice igd : igds) {
-		          System.err.println( "Found device " + igd.getIGDRootDevice().getModelName()+"("+igd.getIGDRootDevice().getFriendlyName()+")" );
-		          boolean mapped = igd.addPortMapping( "Lobber BitTorrent Client",null, port, port,ip[0], 0, "TCP" );
+		          System.err.println( "Found UPNP device " + igd.getIGDRootDevice().getModelName()+" ("+igd.getIGDRootDevice().getManufacturer()+")" );
+		          if (mlistener != null)
+		        	  mlistener.message("Found UPNP device " + igd.getIGDRootDevice().getModelName()+" ("+igd.getIGDRootDevice().getManufacturer()+")" );
+		          boolean mapped = igd.addPortMapping( "Lobber BitTorrent Client",null, port, port,ip, 0, "TCP" );
 		          if ( mapped ) {
-		            System.err.println( "Port "+port+" mapped to " + ip[0] );
+		            System.err.println( "Port "+port+" mapped to " + ip );
+		            if (mlistener != null)
+		            	mlistener.message("Port "+port+" mapped to " + ip + " on "+
+		            			igd.getIGDRootDevice().getModelName()+" ("+igd.getIGDRootDevice().getManufacturer()+")");
+		            return true;
 		          }
 	          }
 	        }
     	} catch (Exception ex) {
     		ex.printStackTrace();
     	}
+    	
+    	return false;
     }
 
     private void upnpUnMapPort(int port) {
 		if (igds != null) {
 			for (InternetGatewayDevice igd : igds) {
-				System.err.println( "Attempting to remove mapping for port "+port+" on device " + igd.getIGDRootDevice().getModelName()+"("+igd.getIGDRootDevice().getFriendlyName()+")" );
+				System.err.println( "Attempting to remove mapping for port "+port+" on UPNP device " + igd.getIGDRootDevice().getModelName()+" ("+igd.getIGDRootDevice().getManufacturer()+")" );
 				try {
 	          		igd.deletePortMapping(null, port, "TCP");
 				} catch (Exception ex) {
@@ -174,8 +192,6 @@ public class SnarkSeeder
         throws IOException
     {
         activity = NETWORK_SETUP;
-        if (mlistener != null)
-        	mlistener.message("Network setup..");
         
         IOException lastException = null;
         if (user_port != -1) {
@@ -216,8 +232,13 @@ public class SnarkSeeder
         } else {
             log.log(Level.FINE, "Listening on port: " + port);
         }
-        
-        upnpMapPort(port);
+      
+        if (needsNATMapping) {
+        	System.err.println("Trying upnp for port "+port);
+            if (mlistener != null)
+            	mlistener.message("UPNP configuration...");
+        	upnpMapAnyIP(port);
+        }
         
         if (mlistener != null)
         	mlistener.message("Listening on port "+port);
@@ -225,31 +246,19 @@ public class SnarkSeeder
         activity = CREATING_TORRENT;
         storage = new Storage(path, announce, slistener);
         if (mlistener != null)
-        	mlistener.message("Creating storage...");
+        	mlistener.message("Initializing torrent...");
         storage.create();
-        if (mlistener != null)
-        	mlistener.message("Extracting torrent...");
         meta = storage.getMetaInfo();
-        if (mlistener != null)
-        	mlistener.message("Saving torrent...");
         
         try {
         	File tmpFile = File.createTempFile("lobber", ".torrent");
 	        FileOutputStream fout = new FileOutputStream(tmpFile);
 	        fout.write(meta.getTorrentData());
-	        if (mlistener != null) {
-	        	mlistener.message(meta.getName());
-	        	mlistener.message(meta.getInfoHash());
-	        }
 	        fout.flush();
 	        fout.close();
         } catch (Throwable ex) {
-        	if (mlistener != null)
-        		mlistener.exception(ex);
+        	ex.printStackTrace();
         }
-        
-        if (mlistener != null)
-        	mlistener.message("Network setup done");
     }
 
     /**
@@ -274,9 +283,11 @@ public class SnarkSeeder
     public void halt() {
     	log.log(Level.INFO, "Shutting down...");
 
-    	log.log(Level.FINE, "Removing UPNP NAT port mapping...");
-    	upnpUnMapPort(port);
-    	
+    	if (needsNATMapping) {
+    		log.log(Level.FINE, "Removing UPNP NAT port mapping...");
+    		upnpUnMapPort(port);
+    	}
+    		
         log.log(Level.FINE, "Halting ConnectionAcceptor...");
         if (this.acceptor != null) {
             this.acceptor.halt();
