@@ -249,16 +249,6 @@ public class SnarkSeeder
         	mlistener.message("Initializing torrent...");
         storage.create();
         meta = storage.getMetaInfo();
-        
-        try {
-        	File tmpFile = File.createTempFile("lobber", ".torrent");
-	        FileOutputStream fout = new FileOutputStream(tmpFile);
-	        fout.write(meta.getTorrentData());
-	        fout.flush();
-	        fout.close();
-        } catch (Throwable ex) {
-        	ex.printStackTrace();
-        }
     }
 
     /**
