@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<jnlp
-    spec="1.0+"
-    codebase="%codebase%"
-    href="launch.jnlp?code=%code%">
+<jnlp spec="1.0+" codebase="/jars" href="launch.jnlp">
   <information>
     <title>Lobber Client</title>
     <vendor>NORDUnet<vendor/>
@@ -18,7 +15,12 @@
      max-heap-size="512m"/>
      $dependencies
   </resources>
-  <applet-desc main-class="$mainClass">
-    <argument>%code%</argument>
-  </applet-desc>
+  <application-desc main-class="$mainClass">
+    <argument>tracker={{ announce_url }}</argument>
+    <argument>uploadname={{ name }}</argument>
+    <argument>published={{ published }}</argument>
+    <argument>expires={{ expires }}</argument>
+    <argument>sessionid={{ sessionid }}</argument>
+    <argument>apiurl={{ apiurl }}</argument>
+  </application-desc>
 </jnlp>

@@ -44,7 +44,7 @@ public class TrackerClient extends Thread
 
     private static final String STOPPED_EVENT = "stopped";
 
-    private final static int SLEEP = 1; // Check in with tracker every minute
+    private final static int SLEEP = 5; // Check in with tracker every 5 seconds
 
     private final MetaInfo meta;
 
@@ -138,7 +138,7 @@ public class TrackerClient extends Thread
             while (!stop) {
                 try {
                     // Sleep some minutes...
-                    Thread.sleep(SLEEP * 60 * 1000);
+                    Thread.sleep(SLEEP * 1000);
                 } catch (InterruptedException interrupt) {
                     // ignore
                 }

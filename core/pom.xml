@@ -79,6 +79,23 @@
 			<groupId>net.sbbi.upnp</groupId>
 			<artifactId>sbbi-upnplib</artifactId>
 		</dependency>
+                <dependency>
+                        <groupId>org.pietschy.wizard</groupId>
+                        <artifactId>wizard</artifactId>
+                </dependency>
+                <dependency>
+                         <groupId>com.toedter.jcalendar</groupId>
+                         <artifactId>jcalendar</artifactId>
+                </dependency>
+                <dependency>
+                         <groupId>commons-jxpath</groupId>
+                         <artifactId>commons-jxpath</artifactId>
+                </dependency>
+                <dependency>
+                         <groupId>commons-beanutils</groupId>
+                         <artifactId>commons-beanutils</artifactId>
+                </dependency>
+
 		<!--
 			dependency> <groupId>javax.servlet</groupId>
 			<artifactId>servlet-api</artifactId> </dependency> <dependency>

@@ -29,7 +29,7 @@
 				</executions>
 				<configuration>
 					<jnlp>
-						<mainClass>net.nordu.lobber.client.applet.LobberClientApplet</mainClass>
+						<mainClass>net.nordu.lobber.client.applet.LobberClientApp</mainClass>
 					</jnlp>
 					<sign>
 						<keystore>${pom.basedir}/devel.jks</keystore>

@@ -20,7 +20,6 @@
 package org.klomp.snark;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Random;
@@ -70,6 +69,8 @@ public class SnarkSeeder
     
     private boolean needsNATMapping;
     
+    private String name;
+    
     /**
      * Constructs a Snark client.
      * @param path The address of the torrent to download or file to serve
@@ -79,7 +80,7 @@ public class SnarkSeeder
      * @param slistener A custom {@link StorageListener} to use
      * @param clistener A custom {@link CoordinatorListener} to use
      */
-    public SnarkSeeder (File path, String[] ip, boolean needsNATMapping, int user_port, String announce,
+    public SnarkSeeder (File path, String name, String[] ip, boolean needsNATMapping, int user_port, String announce,
         StorageListener slistener, CoordinatorListener clistener, MessageListener mlistener)
     {
         this.slistener = slistener;
@@ -90,6 +91,7 @@ public class SnarkSeeder
         this.announce = announce;
         this.mlistener = mlistener;
         this.needsNATMapping = needsNATMapping;
+        this.name = name;
         
         // Create a new ID and fill it with something random. First nine
         // zeros bytes, then three bytes filled with snark and then
@@ -244,7 +246,7 @@ public class SnarkSeeder
         	mlistener.message("Listening on port "+port);
 
         activity = CREATING_TORRENT;
-        storage = new Storage(path, announce, slistener);
+        storage = new Storage(path, announce, slistener, name);
         if (mlistener != null)
         	mlistener.message("Initializing torrent...");
         storage.create();

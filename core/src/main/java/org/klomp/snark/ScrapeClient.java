@@ -20,6 +20,7 @@ public class ScrapeClient {
             log.log(Level.FINE, "Sending TrackerClient request: " + u);
             
             URLConnection c = u.openConnection();
+            c.setUseCaches(false);
             c.connect();
             InputStream in = c.getInputStream();
 

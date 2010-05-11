@@ -74,7 +74,7 @@ public class ScrapeInfo {
 	        Map filesMap = beFiles.getMap();
 	        for (String beInfoHash : (Set<String>)filesMap.keySet()) {
 	        	byte[] info_hash = beInfoHash.getBytes();
-	        	System.err.println(new String(info_hash));
+	        	//System.err.println(new String(info_hash));
 	        	BEValue infoMap = (BEValue)filesMap.get(beInfoHash);
 	        	info.put(new String(info_hash), decodeInfoMap(infoMap.getMap()));
 	        }

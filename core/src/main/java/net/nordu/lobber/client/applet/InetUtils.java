@@ -17,7 +17,7 @@ public class InetUtils {
          while(e.hasMoreElements()) {
             NetworkInterface ni = (NetworkInterface) e.nextElement();
             
-            System.err.println(ni.getName());
+            //System.err.println(ni.getName());
             if (ni.getName().startsWith("vmnet"))
             	continue;
             

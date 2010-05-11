@@ -74,16 +74,25 @@ public class Storage
         bitfield = new BitField(needed);
     }
 
+    public Storage(File baseFile, String announce, StorageListener listener)
+        throws IOException
+    {
+    	this(baseFile,announce,listener,null);
+    }
+    
     /**
      * Creates a storage from the existing file or directory together with an
      * appropriate MetaInfo file as can be announced on the given announce
      * String location.
      */
-    public Storage (File baseFile, String announce, StorageListener listener)
+    public Storage (File baseFile, String announce, StorageListener listener, String name)
         throws IOException
     {
         this.listener = listener;
-
+        
+        if (name == null)
+        	name = baseFile.getName();
+        
         // Create names, rafs and lengths arrays.
         getFiles(baseFile);
 
@@ -121,8 +130,7 @@ public class Storage
         }
 
         // Note that the piece_hashes are not correctly setup yet.
-        metainfo = new MetaInfo(announce, baseFile.getName(), files,
-            lengthsList, piece_size, piece_hashes, total);
+        metainfo = new MetaInfo(announce, name, files, lengthsList, piece_size, piece_hashes, total);
 
     }
 
