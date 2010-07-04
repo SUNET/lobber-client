@@ -107,6 +107,7 @@ public class LobberUIProgessStep extends PanelWizardStep {
 				Map<String,String> parameters = new HashMap<String, String>();
 				parameters.put("expires",model.getExpires());
 				parameters.put("description",model.getDescription());
+				parameters.put("publicAccess", Boolean.toString(model.isPublicAccess()));
 				registerTorrent(model.getApiurl(),model.getSessionid(),parameters);
 			}
 
@@ -267,20 +268,25 @@ public class LobberUIProgessStep extends PanelWizardStep {
 						return torrentData.length;
 					}
 			},"application/x-bittorrent","utf-8");
+			for (Part p: parts) {
+				System.err.println(p.toString());
+			}
 			post.setRequestEntity(new MultipartRequestEntity(parts, post.getParams()));
 			status = http.executeMethod(post);
 			System.err.println(post.getStatusCode());
 			System.err.println(post.getStatusText());
 			
-			if (false) {
-				File tmpf = new File("/tmp/foo.html");
-				FileOutputStream fout = new FileOutputStream(tmpf);
-				InputStream in = post.getResponseBodyAsStream();
-				byte[] buf = new byte[1024];
-				while (in.read(buf) > 0) {
-					fout.write(buf);
-				}
-				fout.close();
+			if (true) {
+				try {
+					File tmpf = new File("/tmp/foo.html");
+					FileOutputStream fout = new FileOutputStream(tmpf);
+					InputStream in = post.getResponseBodyAsStream();
+					byte[] buf = new byte[1024];
+					while (in.read(buf) > 0) {
+						fout.write(buf);
+					}
+					fout.close();
+				} catch (Throwable t) { }
 			}
 					
 			if (!okStatus(status)) {
