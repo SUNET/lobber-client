@@ -1,6 +1,7 @@
 package net.nordu.lobber.client.applet.wizard;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 import javax.swing.JCheckBox;
@@ -41,9 +42,10 @@ public class LobberUIMetadataStep extends PanelWizardStep {
 		tDesc = new JTextArea(4,30);
 		add(tDesc);
 		
-		final Date now = new Date();
+		final Calendar now = Calendar.getInstance();
+		now.add(Calendar.DAY_OF_MONTH, 1);
 		add(new JLabel("Expiration"));
-		dateChooser = new JDateChooser(now,"yyyy-MM-dd");
+		dateChooser = new JDateChooser(now.getTime(),"yyyy-MM-dd");
 		add(dateChooser);
 		
 		add(new JLabel("Allow public access?"));
