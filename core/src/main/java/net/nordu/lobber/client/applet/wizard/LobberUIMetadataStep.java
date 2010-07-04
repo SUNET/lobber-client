@@ -50,7 +50,7 @@ public class LobberUIMetadataStep extends PanelWizardStep {
 		tRO = new JCheckBox();
 		add(tRO);
 		
-		SpringUtilities.makeCompactGrid(this, 2, 2, 6, 6, 6, 6);
+		SpringUtilities.makeCompactGrid(this, 3, 2, 6, 6, 6, 6);
 	}
 	
 	@Override
