@@ -1,8 +1,7 @@
-package net.nordu.lobber.client.applet;
+package net.nordu.lobber.client.applet.wizard;
 
 import java.awt.BorderLayout;
 import java.awt.Font;
-import java.beans.Beans;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -19,6 +18,12 @@ import javax.swing.BorderFactory;
 import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 
+import net.nordu.lobber.client.applet.AppletCoordinatorListener;
+import net.nordu.lobber.client.applet.AppletStorageListener;
+import net.nordu.lobber.client.applet.InetUtils;
+import net.nordu.lobber.client.applet.NonLocalUnicastAddressFilter;
+import net.nordu.lobber.client.applet.NonLoopbackUnicastAddressFilter;
+
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
@@ -33,10 +38,10 @@ import org.klomp.snark.CoordinatorListener;
 import org.klomp.snark.MessageListener;
 import org.klomp.snark.ScrapeClient;
 import org.klomp.snark.ScrapeInfo;
+import org.klomp.snark.ScrapeInfo.ScrapeStats;
 import org.klomp.snark.SnarkSeeder;
 import org.klomp.snark.SnarkSeederShutdown;
 import org.klomp.snark.StorageListener;
-import org.klomp.snark.ScrapeInfo.ScrapeStats;
 import org.pietschy.wizard.PanelWizardStep;
 import org.pietschy.wizard.WizardModel;
 

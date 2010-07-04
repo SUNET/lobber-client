@@ -1,4 +1,4 @@
-package net.nordu.lobber.client.applet;
+package net.nordu.lobber.client.applet.wizard;
 
 import java.awt.BorderLayout;
 

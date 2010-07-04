@@ -1,4 +1,4 @@
-package net.nordu.lobber.client.applet;
+package net.nordu.lobber.client.applet.wizard;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
@@ -11,6 +11,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SpringLayout;
+
+import net.nordu.lobber.client.applet.SpringUtilities;
 
 import org.pietschy.wizard.InvalidStateException;
 import org.pietschy.wizard.PanelWizardStep;

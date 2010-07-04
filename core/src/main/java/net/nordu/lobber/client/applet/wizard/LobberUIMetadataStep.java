@@ -1,11 +1,14 @@
-package net.nordu.lobber.client.applet;
+package net.nordu.lobber.client.applet.wizard;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JTextArea;
 import javax.swing.SpringLayout;
+
+import net.nordu.lobber.client.applet.SpringUtilities;
 
 import org.pietschy.wizard.InvalidStateException;
 import org.pietschy.wizard.PanelWizardStep;
@@ -22,6 +25,7 @@ public class LobberUIMetadataStep extends PanelWizardStep {
 	private LobberUIWizardModel model;
 	private JTextArea tDesc;
 	private JDateChooser dateChooser;
+	private JCheckBox tRO;
 	private SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd");
 	
 	public void init(WizardModel model) {
@@ -42,6 +46,10 @@ public class LobberUIMetadataStep extends PanelWizardStep {
 		dateChooser = new JDateChooser(now,"yyyy-MM-dd");
 		add(dateChooser);
 		
+		add(new JLabel("Allow public access?"));
+		tRO = new JCheckBox();
+		add(tRO);
+		
 		SpringUtilities.makeCompactGrid(this, 2, 2, 6, 6, 6, 6);
 	}
 	
@@ -49,6 +57,7 @@ public class LobberUIMetadataStep extends PanelWizardStep {
 	public void applyState() throws InvalidStateException {
 		model.setDescription(tDesc.getText());
 		model.setExpires(iso.format(dateChooser.getDate()));
+		model.setPublicAccess(tRO.isSelected());
 		
 		if (model.getDescription() != null && model.getDescription().length() > 0)
 			setComplete(true);

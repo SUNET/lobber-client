@@ -1,4 +1,4 @@
-package net.nordu.lobber.client.applet;
+package net.nordu.lobber.client.applet.wizard;
 
 import java.io.File;
 
@@ -45,6 +45,14 @@ public class LobberUIWizardModel extends DynamicModel {
 	public void setDescription(String description) {
 		this.description = description;
 	}
+	
+	public void setPublicAccess(boolean publicAccess) {
+		this.publicAccess = publicAccess;
+	}
+	
+	public boolean isPublicAccess() {
+		return publicAccess;
+	}
 
 	private File file;
 	private String name;
@@ -54,6 +62,7 @@ public class LobberUIWizardModel extends DynamicModel {
 	private String sessionid;
 	private String apiurl;
 	private String description;
+	private boolean publicAccess;
 	
 	public LobberUIWizardModel() {
 		super();
