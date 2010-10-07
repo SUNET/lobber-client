@@ -7,8 +7,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.SocketException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -34,11 +37,14 @@ import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
 import org.apache.commons.httpclient.methods.multipart.Part;
 import org.apache.commons.httpclient.methods.multipart.PartSource;
 import org.apache.commons.httpclient.methods.multipart.StringPart;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.klomp.snark.CoordinatorListener;
 import org.klomp.snark.MessageListener;
+import org.klomp.snark.MetaInfo;
 import org.klomp.snark.ScrapeClient;
 import org.klomp.snark.ScrapeInfo;
-import org.klomp.snark.ScrapeInfo.ScrapeStats;
+import org.klomp.snark.ScrapeStats;
 import org.klomp.snark.SnarkSeeder;
 import org.klomp.snark.SnarkSeederShutdown;
 import org.klomp.snark.StorageListener;
@@ -123,16 +129,54 @@ public class LobberUIProgessStep extends PanelWizardStep {
 		progressLabel.setText("Serving "+seeder.meta.getTotalLength()+" bytes...");
 		seeder.collectPieces();
 	}
+	
+	private int hazCount() {
+		try {
+			String s = model.getApiurl()+"/torrent/hazcount/"+MetaInfo.hexencode(seeder.meta.getInfoHash())+"/urn:x-lobber:storagenode";
+			URL u = new URL(s);
+			URLConnection c = u.openConnection();
+	        c.setUseCaches(false);
+	        c.connect();
+	        JSONObject result = new JSONObject(new JSONTokener(new InputStreamReader(c.getInputStream())));
+	        System.err.println("countresult: "+result);
+	        return result.getInt("count");
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return 0;
+		}
+	}
 
+	private ScrapeStats proxyScrape() {
+		try {
+			String s = model.getApiurl()+"/torrent/scrapehash/"+MetaInfo.hexencode(seeder.meta.getInfoHash());
+			URL u = new URL(s);
+			URLConnection c = u.openConnection();
+	        c.setUseCaches(false);
+	        c.connect();
+	        JSONObject result = new JSONObject(new JSONTokener(new InputStreamReader(c.getInputStream())));
+	        System.err.println("countresult: "+result);
+	        ScrapeStats stats = new ScrapeStats();
+	        stats.completed = result.getInt("complete");
+	        stats.downloaded = result.getInt("downloaded");
+	        stats.incomplete = result.getInt("incomplete");
+	        return stats;
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+	
 	private ScrapeStats getStats() {
+		
 		try {
 			ScrapeClient scrape = new ScrapeClient();
 			String scrapeUrl = model.getTracker();
 			scrapeUrl = scrapeUrl.replace("announce", "scrape");
 			byte[] info_hash = seeder.meta.getInfoHash();
 			ScrapeInfo info = scrape.scrape(scrapeUrl,info_hash);
-			if (info.getFailureReason() != null)
-				throw new IOException(info.getFailureReason());
+			//if (info.getFailureReason() != null)
+			//	throw new IOException(info.getFailureReason());
+			
 			return info.getScrapeStats(info_hash);
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -183,18 +227,29 @@ public class LobberUIProgessStep extends PanelWizardStep {
 					progressBar.setIndeterminate(false);
 
 				long ul = seeder.coordinator.getUploaded();
-				progressBar.setValue((int)(ul/sz));
+				System.err.println(seeder.meta);
+				progressBar.setValue((int)((ul/sz)*100));
+				System.err.println((ul/sz)*100);
+				System.err.println((int)((ul/sz)*100));
 
 				//progress("Stats: u="+seeder.coordinator.getUploaded()+" d="+seeder.coordinator.getDownloaded()+" p="+seeder.coordinator.getPeers());
-				ScrapeStats stats = getStats();
+				ScrapeStats stats = proxyScrape();
+				System.err.println("Stats: "+stats);
 				if (stats != null) {
+					System.err.println("Am I done? "+stats.completed);
 					done = stats.completed > 1;
 				}
+				
+				int count = hazCount();
+				done = done || count > 0;
 
 				if (done) {
 					progressBar.setIndeterminate(false);
 					progressBar.setValue(100);
-					progressLabel.setText((stats.completed - 1) + " peer(s) is complete");
+					if (stats != null)
+						progressLabel.setText((stats.completed - 1) + " peer(s) is complete");
+					else
+						progressLabel.setText(count + " peer(s) confirmed");
 					shutdown.run();
 					setComplete(true);
 					setBusy(false);
@@ -240,7 +295,7 @@ public class LobberUIProgessStep extends PanelWizardStep {
 		int ntries = 0;
 		while (!okStatus(status) && ntries++ < MAX_TRIES) {
 			HttpClient http = new HttpClient();
-			PostMethod post = new PostMethod(apiUrl);
+			PostMethod post = new PostMethod(apiUrl+"/torrent/add.json");
 			post.getParams().setCookiePolicy(CookiePolicy.IGNORE_COOKIES);
 	        post.setRequestHeader("Cookie", "sessionid="+sessionid);
 

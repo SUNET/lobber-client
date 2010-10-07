@@ -6,30 +6,31 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.codec.binary.Hex;
 import org.klomp.snark.bencode.BDecoder;
 import org.klomp.snark.bencode.BEValue;
 import org.klomp.snark.bencode.InvalidBEncodingException;
 
 public class ScrapeInfo {
-
-	public class ScrapeStats {
-		public int completed;
-		public int downloaded;
-		public int incomplete;
-		public String name;
-		
-		public String toString() {
-			StringBuffer buf = new StringBuffer();
-			buf.append("ScrapeStats[completed=").append(completed).append(" downloaded=").append(downloaded).append(" incomplete=").append(incomplete).append("]");
-			return buf.toString();
-		}
-	}
 	
 	private String failure_reason;
 	private Map<String, ScrapeStats> info;
 	
+	
+	public String toString() {
+		StringBuffer buf = new StringBuffer();
+		
+		for (Map.Entry<String, ScrapeStats> e: info.entrySet()) {
+			buf.append(e.getKey()).append(" -> ").append(e.getValue().toString());
+		}
+		
+		return buf.toString();
+	}
+	
 	public ScrapeStats getScrapeStats(byte[] info_hash) {
-		return info.get(new String(info_hash));
+		System.err.println("ScrapeInfo: "+info);
+		System.err.println("Looking for "+MetaInfo.hexencode(info_hash));
+		return info.get(MetaInfo.hexencode(info_hash));
 	}
 	
     public ScrapeInfo (InputStream in)
@@ -73,10 +74,11 @@ public class ScrapeInfo {
 	        BEValue beFiles = (BEValue)m.get("files");
 	        Map filesMap = beFiles.getMap();
 	        for (String beInfoHash : (Set<String>)filesMap.keySet()) {
-	        	byte[] info_hash = beInfoHash.getBytes();
-	        	//System.err.println(new String(info_hash));
+	        	System.err.println("beInfoHash: "+beInfoHash);
+	        	System.err.println(MetaInfo.hexencode(beInfoHash.getBytes()));
 	        	BEValue infoMap = (BEValue)filesMap.get(beInfoHash);
-	        	info.put(new String(info_hash), decodeInfoMap(infoMap.getMap()));
+	        	//info.put(MetaInfo.hexencode(info_hash), decodeInfoMap(infoMap.getMap()));
+	        	info.put(MetaInfo.hexencode(beInfoHash.getBytes()), decodeInfoMap(infoMap.getMap()));
 	        }
 	    }
 	}

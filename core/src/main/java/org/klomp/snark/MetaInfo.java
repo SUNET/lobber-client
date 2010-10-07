@@ -317,7 +317,7 @@ public class MetaInfo
     /**
      * Encode a byte array as a hex encoded string.
      */
-    private static String hexencode (byte[] bs)
+    public static String hexencode (byte[] bs)
     {
         StringBuffer sb = new StringBuffer(bs.length * 2);
         for (byte element : bs) {
