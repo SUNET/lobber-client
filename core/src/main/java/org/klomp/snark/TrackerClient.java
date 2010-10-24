@@ -197,7 +197,7 @@ public class TrackerClient extends Thread
         String peerID, long uploaded, long downloaded, long left, String event)
         throws IOException
     {
-        String s = announce + "?info_hash=" + infoHash + "&peer_id=" + peerID
+        String s = announce + "?info_hash=" + infoHash + "&peer_id=" + peerID + "&compact=1"
             + "&port=" + port + "&uploaded=" + uploaded + "&downloaded="
             + downloaded + "&left=" + left
             + ((event != NO_EVENT) ? ("&event=" + event) : "");
