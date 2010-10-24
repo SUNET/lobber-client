@@ -226,11 +226,11 @@ public class LobberUIProgessStep extends PanelWizardStep {
 				if (seeder.coordinator.getPeers() > 0)
 					progressBar.setIndeterminate(false);
 
-				long ul = seeder.coordinator.getUploaded();
+				long dl = seeder.coordinator.getDownloaded();
 				System.err.println(seeder.meta);
-				progressBar.setValue((int)((ul/sz)*100));
-				System.err.println((ul/sz)*100);
-				System.err.println((int)((ul/sz)*100));
+				progressBar.setValue((int)((dl/sz)*100));
+				System.err.println((dl/sz)*100);
+				System.err.println((int)((dl/sz)*100));
 
 				//progress("Stats: u="+seeder.coordinator.getUploaded()+" d="+seeder.coordinator.getDownloaded()+" p="+seeder.coordinator.getPeers());
 				ScrapeStats stats = proxyScrape();
