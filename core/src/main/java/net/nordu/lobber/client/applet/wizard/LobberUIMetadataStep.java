@@ -43,9 +43,11 @@ public class LobberUIMetadataStep extends PanelWizardStep {
 		add(tDesc);
 		
 		final Calendar now = Calendar.getInstance();
-		now.add(Calendar.DAY_OF_MONTH, 1);
+		final Calendar tomorrow = Calendar.getInstance();
+		tomorrow.add(Calendar.DAY_OF_MONTH, 1);
 		add(new JLabel("Expiration"));
-		dateChooser = new JDateChooser(now.getTime(),"yyyy-MM-dd");
+		dateChooser = new JDateChooser(tomorrow.getTime(),"yyyy-MM-dd");
+		dateChooser.setMinSelectableDate(now.getTime());
 		add(dateChooser);
 		
 		add(new JLabel("Allow public access?"));
