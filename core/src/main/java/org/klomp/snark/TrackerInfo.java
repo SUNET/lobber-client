@@ -111,11 +111,12 @@ public class TrackerInfo
 	    throws IOException
 	{
 	    Set<Peer> peers = new HashSet<Peer>(pl.length / 6);
-	
-	    for (int i = 0; i < pl.length; i += 6) {
-	    	PeerID peerID = new PeerID(pl,i);
-	    	Peer peer = new Peer(peerID,my_id,metainfo);
-	    	peers.add(peer);
+	    if (pl.length > 5) { // at least one peer we need Yoda
+		    for (int i = 0; i < pl.length; i += 6) {
+		    	PeerID peerID = new PeerID(pl,i);
+		    	Peer peer = new Peer(peerID,my_id,metainfo);
+		    	peers.add(peer);
+		    }
 	    }
 	
 	    return peers;
