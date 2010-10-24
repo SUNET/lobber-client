@@ -376,7 +376,7 @@ public class PeerCoordinator implements PeerListener
     /**
      * Called when a peer has uploaded some bytes of a piece.
      */
-    public void uploaded (Peer peer, int size)
+    public synchronized void uploaded (Peer peer, int size)
     {
         uploaded += size;
 
@@ -388,7 +388,7 @@ public class PeerCoordinator implements PeerListener
     /**
      * Called when a peer has downloaded some bytes of a piece.
      */
-    public void downloaded (Peer peer, int size)
+    public synchronized void downloaded (Peer peer, int size)
     {
         downloaded += size;
 
