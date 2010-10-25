@@ -235,7 +235,6 @@ public class LobberUIProgessStep extends PanelWizardStep {
 				}
 				
 				int count = hazCount();
-				//done = done || count > 0;
 
 				if (count > 0) {
 					progressBar.setIndeterminate(false);
