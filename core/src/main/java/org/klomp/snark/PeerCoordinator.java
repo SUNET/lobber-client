@@ -130,7 +130,7 @@ public class PeerCoordinator implements PeerListener
     /**
      * Returns the total number of uploaded bytes of all peers.
      */
-    public long getUploaded ()
+    public synchronized long getUploaded ()
     {
         return uploaded;
     }
@@ -138,7 +138,7 @@ public class PeerCoordinator implements PeerListener
     /**
      * Returns the total number of downloaded bytes of all peers.
      */
-    public long getDownloaded ()
+    public synchronized long getDownloaded ()
     {
         return downloaded;
     }
