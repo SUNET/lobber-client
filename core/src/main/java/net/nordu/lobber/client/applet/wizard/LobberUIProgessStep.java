@@ -96,7 +96,7 @@ public class LobberUIProgessStep extends PanelWizardStep {
 	private void startSeeding() {
 		try {
 			StorageListener slistener = new AppletStorageListener();
-			CoordinatorListener clistener = new AppletCoordinatorListener();
+			AppletCoordinatorListener clistener = new AppletCoordinatorListener(progressBar);
 			MessageListener mlistener = new MessageListener() {
 				
 				public void message(Object msg) {
@@ -109,6 +109,7 @@ public class LobberUIProgessStep extends PanelWizardStep {
 			};
 
 			createTorrent(model.getFile(), model.getName(), slistener, clistener, mlistener);
+			clistener.setSize(seeder.meta.getTotalLength());
 			if (model.getApiurl() != null) {
 				Map<String,String> parameters = new HashMap<String, String>();
 				parameters.put("expires",model.getExpires());
@@ -226,13 +227,6 @@ public class LobberUIProgessStep extends PanelWizardStep {
 				if (seeder.coordinator.getPeers() > 0)
 					progressBar.setIndeterminate(false);
 
-				long dl = seeder.coordinator.getDownloaded();
-				System.err.println(seeder.meta);
-				progressBar.setValue((int)((dl/sz)*100));
-				System.err.println((dl/sz)*100);
-				System.err.println((int)((dl/sz)*100));
-
-				//progress("Stats: u="+seeder.coordinator.getUploaded()+" d="+seeder.coordinator.getDownloaded()+" p="+seeder.coordinator.getPeers());
 				ScrapeStats stats = proxyScrape();
 				System.err.println("Stats: "+stats);
 				if (stats != null) {
@@ -241,9 +235,9 @@ public class LobberUIProgessStep extends PanelWizardStep {
 				}
 				
 				int count = hazCount();
-				done = done || count > 0;
+				//done = done || count > 0;
 
-				if (done) {
+				if (count > 0) {
 					progressBar.setIndeterminate(false);
 					progressBar.setValue(100);
 					if (stats != null)
