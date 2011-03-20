@@ -29,12 +29,11 @@
 					</execution>
 				</executions>
 				<configuration>
-					<keystore>${pom.basedir}/devel.jks</keystore>
+					<keystore>${pom.basedir}/../sunet.jks</keystore>
 					<alias>kaka4711</alias>
 					<storepass>kaka4711</storepass>
-					<alias>code</alias>
-					<signedjar>${project.build.directory}/signed/${project.build.finalName}.jar
-					</signedjar>
+					<alias>sunet</alias>
+					<signedjar>${project.build.directory}/signed/${project.build.finalName}.jar</signedjar>
 					<verify>true</verify>
 				</configuration>
 			</plugin>

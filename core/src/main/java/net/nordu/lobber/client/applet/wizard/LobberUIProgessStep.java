@@ -3,11 +3,14 @@ package net.nordu.lobber.client.applet.wizard;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.SocketException;
 import java.net.URL;
@@ -18,6 +21,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 
@@ -48,6 +52,7 @@ import org.klomp.snark.ScrapeStats;
 import org.klomp.snark.SnarkSeeder;
 import org.klomp.snark.SnarkSeederShutdown;
 import org.klomp.snark.StorageListener;
+import org.pietschy.wizard.InvalidStateException;
 import org.pietschy.wizard.PanelWizardStep;
 import org.pietschy.wizard.WizardModel;
 
@@ -68,8 +73,9 @@ public class LobberUIProgessStep extends PanelWizardStep {
 	private static final int MAX_TRIES = 10;
 	
 	public LobberUIProgessStep() {
-		
+		super("Upload", "Waiting to finish the upload");
 		setLayout(new BorderLayout());
+		setIcon(new ImageIcon(Thread.currentThread().getContextClassLoader().getResource("lobber-small.png")));
 		
 		progressBar = new JProgressBar(0, 100);
 		progressBar.setValue(0);
@@ -81,6 +87,10 @@ public class LobberUIProgessStep extends PanelWizardStep {
 		progressLabel.setBorder(BorderFactory.createEmptyBorder());
 		progressLabel.setEditable(false);
 		add(progressLabel,BorderLayout.SOUTH);
+	}
+	
+	@Override
+	public void applyState() throws InvalidStateException {
 	}
 	
 	@Override
@@ -138,9 +148,21 @@ public class LobberUIProgessStep extends PanelWizardStep {
 			URLConnection c = u.openConnection();
 	        c.setUseCaches(false);
 	        c.connect();
-	        JSONObject result = new JSONObject(new JSONTokener(new InputStreamReader(c.getInputStream())));
+	        byte[] buf = new byte[1024];
+	        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	        InputStream in = c.getInputStream();
+	        int n = 0;
+	        while ( (n = in.read(buf)) > 0) {
+	        	baos.write(buf,0,n);
+	        }
+	        String json = baos.toString().trim();
+	        System.err.println("json: "+json);
+	        Reader r = new StringReader(json);
+	        JSONObject result = new JSONObject(new JSONTokener(r));
 	        System.err.println("countresult: "+result);
-	        return result.getInt("count");
+	        int count = result.getInt("count");
+	        System.err.println("count: "+count);
+	        return count;
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			return 0;
@@ -167,12 +189,16 @@ public class LobberUIProgessStep extends PanelWizardStep {
 		}
 	}
 	
-	private ScrapeStats getStats() {
+	private ScrapeStats getStats(String entitlement) {
 		
 		try {
 			ScrapeClient scrape = new ScrapeClient();
 			String scrapeUrl = model.getTracker();
-			scrapeUrl = scrapeUrl.replace("announce", "scrape");
+			String surl = "scrape";
+			if (entitlement != null) {
+				surl = surl + "/" + entitlement; 
+			}
+			scrapeUrl = scrapeUrl.replace("announce", surl);
 			byte[] info_hash = seeder.meta.getInfoHash();
 			ScrapeInfo info = scrape.scrape(scrapeUrl,info_hash);
 			//if (info.getFailureReason() != null)
@@ -226,23 +252,20 @@ public class LobberUIProgessStep extends PanelWizardStep {
 				
 				if (seeder.coordinator.getPeers() > 0)
 					progressBar.setIndeterminate(false);
-
-				ScrapeStats stats = proxyScrape();
-				System.err.println("Stats: "+stats);
-				if (stats != null) {
-					System.err.println("Am I done? "+stats.completed);
-					done = stats.completed > 1;
+				
+				if (progressBar.getValue() >= 99) {
+					progressLabel.setText("Waiting for confirmation...");
 				}
 				
-				int count = hazCount();
+				ScrapeStats stats = getStats("urn:x-lobber:storagenode");
+				System.err.println("Stats: "+stats);				
+				//int count = hazCount();
 
-				if (count > 0) {
+				if (stats != null && stats.completed >= 1) {
 					progressBar.setIndeterminate(false);
 					progressBar.setValue(100);
 					if (stats != null)
-						progressLabel.setText((stats.completed - 1) + " peer(s) is complete");
-					else
-						progressLabel.setText(count + " peer(s) confirmed");
+						progressLabel.setText((stats.completed - 1) + " peer(s) is confirmed!");
 					shutdown.run();
 					setComplete(true);
 					setBusy(false);
@@ -324,7 +347,7 @@ public class LobberUIProgessStep extends PanelWizardStep {
 			System.err.println(post.getStatusCode());
 			System.err.println(post.getStatusText());
 			
-			if (true) {
+			if (false) {
 				try {
 					File tmpf = new File("/tmp/foo.html");
 					FileOutputStream fout = new FileOutputStream(tmpf);

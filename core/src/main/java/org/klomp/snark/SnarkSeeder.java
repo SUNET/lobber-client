@@ -221,16 +221,9 @@ public class SnarkSeeder
                 message = message + "on port " + user_port;
             }
 
-            if (ip != null || user_port != -1) {
-            	if (mlistener != null)
-                	mlistener.message(message);
-                abort(message, lastException);
-            } else {
-            	if (mlistener != null)
-                	mlistener.message("warning: "+message);
-                log.log(Level.WARNING, message);
-            }
-            port = -1;
+        	if (mlistener != null)
+            	mlistener.message(message);
+            abort(message, lastException);
         } else {
             log.log(Level.FINE, "Listening on port: " + port);
         }

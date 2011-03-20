@@ -2,6 +2,7 @@ package net.nordu.lobber.client.applet.wizard;
 
 import java.awt.BorderLayout;
 
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 import org.pietschy.wizard.InvalidStateException;
@@ -22,6 +23,7 @@ public class LobberUIConfirmStep extends PanelWizardStep {
 	
 	public LobberUIConfirmStep()  {
 		super("Confirm", "Confirm and start upload");
+		setIcon(new ImageIcon(Thread.currentThread().getContextClassLoader().getResource("lobber-small.png")));
 		setComplete(true);
 
 		setLayout(new BorderLayout());

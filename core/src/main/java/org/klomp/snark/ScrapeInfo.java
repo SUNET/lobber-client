@@ -78,7 +78,7 @@ public class ScrapeInfo {
 	        	System.err.println(MetaInfo.hexencode(beInfoHash.getBytes()));
 	        	BEValue infoMap = (BEValue)filesMap.get(beInfoHash);
 	        	//info.put(MetaInfo.hexencode(info_hash), decodeInfoMap(infoMap.getMap()));
-	        	info.put(MetaInfo.hexencode(beInfoHash.getBytes()), decodeInfoMap(infoMap.getMap()));
+	        	info.put(beInfoHash, decodeInfoMap(infoMap.getMap()));
 	        }
 	    }
 	}

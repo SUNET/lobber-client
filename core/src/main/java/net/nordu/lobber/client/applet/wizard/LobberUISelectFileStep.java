@@ -5,6 +5,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -36,6 +38,7 @@ public class LobberUISelectFileStep extends PanelWizardStep {
 	
 	public LobberUISelectFileStep() {
 		super("Select data","Select a file or directory to upload");
+		setIcon(new ImageIcon(Thread.currentThread().getContextClassLoader().getResource("lobber-small.png")));
 		
 		JPanel rootPanel = new JPanel();
 		
@@ -67,6 +70,7 @@ public class LobberUISelectFileStep extends PanelWizardStep {
 				if (rc == JFileChooser.APPROVE_OPTION) {
 					setFile(fileChooser.getSelectedFile());
 					tFile.setText(file.getAbsolutePath());
+					System.err.println("name is "+file.getName());
 					tName.setText(file.getName());
 					setComplete(true);
 					model.setLastVisible(true);

@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
+import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JTextArea;
@@ -35,6 +36,7 @@ public class LobberUIMetadataStep extends PanelWizardStep {
 	
 	public LobberUIMetadataStep()  {
 		super("Upload metadata", "Provide additional information for your upload");
+		setIcon(new ImageIcon(Thread.currentThread().getContextClassLoader().getResource("lobber-small.png")));
 		setComplete(true);
 		setLayout(new SpringLayout());
 		

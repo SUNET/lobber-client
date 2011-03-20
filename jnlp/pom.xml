@@ -32,10 +32,10 @@
 						<mainClass>net.nordu.lobber.client.applet.LobberClientApp</mainClass>
 					</jnlp>
 					<sign>
-						<keystore>${pom.basedir}/devel.jks</keystore>
+						<keystore>${pom.basedir}/../sunet.jks</keystore>
 						<keypass>kaka4711</keypass>
 						<storepass>kaka4711</storepass>
-						<alias>code</alias>
+						<alias>sunet</alias>
 					</sign>
 					<verbose>true</verbose>
 				</configuration>

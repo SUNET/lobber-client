@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JTextField;
 
@@ -19,7 +20,7 @@ public class LobberUIAUPStep extends PanelWizardStep {
 	
 	public LobberUIAUPStep() {
 		super("Usage conditions","Read and accept the usage policy");
-		
+		setIcon(new ImageIcon(Thread.currentThread().getContextClassLoader().getResource("lobber-small.png")));
 		setLayout(new BorderLayout());
 		JTextField tAup = new JTextField(aupText, 40);
 		add(tAup,BorderLayout.NORTH);

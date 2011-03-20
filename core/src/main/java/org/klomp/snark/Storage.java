@@ -104,6 +104,7 @@ public class Storage
             lengthsList.add(new Long(ref.getLength()));
             List<String> file = new ArrayList<String>();
             StringTokenizer st = new StringTokenizer(ref.getPath(), File.separator);
+            // we need to skip tokens up to the baseFile getName() so as not to create the full tree
             while (st.hasMoreTokens()) {
                 String part = st.nextToken();
                 file.add(part);
